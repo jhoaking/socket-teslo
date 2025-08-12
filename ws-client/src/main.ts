@@ -13,7 +13,7 @@ document.querySelector<HTMLDivElement>("#app")!.innerHTML = `
    <ul id="clients-ul"> </ul>
 
    <form id="message-form">
-    <input placeholder="message" id="message-input" /> 
+    <input placeholder="message" id="message-input"/> 
    </form>
 
    <h3>Messages</h3> 

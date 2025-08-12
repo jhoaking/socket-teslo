@@ -61,8 +61,8 @@ export class MessagesWsGateway
     // message: payload.message || 'no-message',
     // });
 
-    this.wws.emit('messages-from-server', {
-      fullName: this.messagesWsService.getUserFullNameBySocketId(client.id),
+    this.wws.emit('message-from-server', {
+      fullName: this.messagesWsService.getUserFullNameBySocketId(client.id), 
       message: payload.message || 'no-message',
     });
   }
