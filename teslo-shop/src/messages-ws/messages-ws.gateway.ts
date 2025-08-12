@@ -8,16 +8,30 @@ import {
 import { Socket, Server } from 'socket.io';
 import { MessagesWsService } from './messages-ws.service';
 import { NewMessageDto } from './dto/new-message.dto';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from 'src/auth/interfaces';
 
 @WebSocketGateway({ cors: true })
 export class MessagesWsGateway
   implements OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer() wws: Server;
-  constructor(private readonly messagesWsService: MessagesWsService) {}
+  constructor(
+    private readonly messagesWsService: MessagesWsService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  handleConnection(client: Socket) {
-    this.messagesWsService.registerClient(client);
+  async handleConnection(client: Socket) {
+    const token = client.handshake.headers.authentication as string;
+
+    let payload: JwtPayload;
+    try {
+      payload = this.jwtService.verify(token);
+      await this.messagesWsService.registerClient(client, payload.id);
+    } catch (error) {
+      client.disconnect();
+      return;
+    }
 
     this.wws.emit(
       'clients-updated',
@@ -34,5 +48,22 @@ export class MessagesWsGateway
   }
 
   @SubscribeMessage('message-from-client')
-  handleMessageFromClient(client: Socket, payload: NewMessageDto) {}
+  handleMessageFromClient(client: Socket, payload: NewMessageDto) {
+    //! emite unicamente al cliente
+    //client.emit('messages-from-server', {
+    // fullName: 'Soy yo',
+    //message: payload.message || 'no-message',
+    //});
+    //! emitir a todos menos al cliente que emitio el mensaje
+
+    // client.broadcast.emit('messages-from-server', {
+    // fullName: 'Soy yo',
+    // message: payload.message || 'no-message',
+    // });
+
+    this.wws.emit('messages-from-server', {
+      fullName: this.messagesWsService.getUserFullNameBySocketId(client.id),
+      message: payload.message || 'no-message',
+    });
+  }
 }
